@@ -75,7 +75,7 @@ const getDependencyData = async domain => {
   return new Promise(resolve => {
     // Spawn a new process.
     let collectedData = ''
-    const yarn = spawn('yarn --silent start', [ '-l', '--follow-redirects', '--output=json', '--silent', `--url=http://${domain}/` ], {shell: '/bin/bash', cwd: './../dependency-checker'})
+    const yarn = spawn('yarn --silent start', [ '-l', '--follow-redirects', '--wait=5000', '--output=json', '--silent', `--url=http://${domain}/` ], {shell: '/bin/bash', cwd: './../dependency-checker'})
 
     // Collect results to a variable.
     yarn.stdout.on('data', data => {

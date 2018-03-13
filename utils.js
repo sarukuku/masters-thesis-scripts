@@ -107,8 +107,8 @@ exports.gatherDependencyData = async () => {
   // Map over all domains, limit to 30 calls at once.
   await new Promise(resolve => {
     async.mapLimit(domains, 10, async (domainObj) => {
-      console.log(`Testing domain: ${domainObj['Name']}.fi `)
       let dependencyJson = await getDependencyData(`${domainObj['Name']}.fi`)
+      console.log(`Tested domain: ${domainObj['Name']}.fi: ${dependencyJson.substring(0, 90)}...`)
       await db.saveDependencyJson(dependencyJson, domainObj['rowid'])
     }, (err, results) => {
       if (err) {

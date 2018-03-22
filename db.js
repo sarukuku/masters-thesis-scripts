@@ -140,6 +140,18 @@ exports.saveDependencyJson = async (json, rowId) => {
   })
 }
 
+exports.getAll = async (fieldsString) => {
+  return new Promise(resolve => {
+    db.all(`SELECT ${fieldsString} FROM domains`, (err, domains) => {
+      if (err) {
+        console.error(err.message)
+      }
+
+      resolve(domains)
+    })
+  })
+}
+
 exports.close = () => {
   db.close()
 }

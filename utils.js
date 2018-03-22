@@ -104,7 +104,7 @@ exports.gatherDependencyData = async () => {
   // Get all rows from the DB.
   const domains = await db.getWorkingDomains()
 
-  // Map over all domains, limit to 30 calls at once.
+  // Map over all domains, limit concurrent tests.
   const totalDomains = domains.length
   let counter = 0
   await new Promise(resolve => {
@@ -120,6 +120,49 @@ exports.gatherDependencyData = async () => {
       resolve()
     })
   })
+
+  // Shut it down.
+  db.close()
+}
+
+exports.analyzeHttpStatusData = async () => {
+  // Fire it up.
+  await db.openOrCreate()
+
+  // Get all rows from the DB.
+  const queryResults = await db.getAll('HttpStatusCode')
+
+  // Loop over all rows and count HTTP status codes
+  let statusCodes = {}
+  queryResults.forEach(domainObj => {
+    let statusCode = domainObj['HttpStatusCode']
+
+    if (statusCodes.hasOwnProperty(statusCode)) {
+      statusCodes[statusCode] += 1
+    } else {
+      if (statusCode) {
+        statusCodes[statusCode] = 1
+      } else {
+        if (statusCodes.hasOwnProperty('emptyStatus')) {
+          statusCodes['emptyStatus'] += 1
+        } else {
+          statusCodes['emptyStatus'] = 1
+        }
+      }
+    }
+  })
+
+  // Log how many domains the query resturned.
+  console.log(`Domains in the query results: ${queryResults.length}`)
+
+  // Log how many domains the set has in total (for error checking)
+  let totalCount = 0
+  console.log('Counts (code,count):')
+  for (let key in statusCodes) {
+    console.log(`${key},${statusCodes[key]}`)
+    totalCount += statusCodes[key]
+  }
+  console.log(`Domains in the result set: ${totalCount}`)
 
   // Shut it down.
   db.close()

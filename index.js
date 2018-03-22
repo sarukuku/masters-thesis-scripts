@@ -21,6 +21,9 @@ const argv = require('yargs').argv;
     case 'test-dependencies':
       await utils.gatherDependencyData()
       break
+    case 'http-status-analysis':
+      await utils.analyzeHttpStatusData()
+      break
     default:
       console.warn('You didn\'t select a task to run. I\'ll quit.')
       return

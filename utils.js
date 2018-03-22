@@ -49,7 +49,7 @@ const getHttpStatusCode = async domain => {
     // Spawn a new process.
     let collectedData = ''
     // curl -s -o /dev/null -I -L -w "%{http_code}" jsalovaara.fi
-    const curl = spawn('curl', [ '-s', '-o', '/dev/null', '-I', '-L', '-w', '"%{http_code}"', domain ], {shell: '/bin/bash'})
+    const curl = spawn('curl', [ '-s', '-o', '/dev/null', '-I', '-L', '-w', '"%{http_code}"', '--connect-timeout', '60', '--max-time', '120', domain ], {shell: '/bin/bash'})
 
     // Collect results to a variable.
     curl.stdout.on('data', data => {
@@ -62,12 +62,12 @@ const getHttpStatusCode = async domain => {
       resolve(collectedData)
     })
 
-    // Limit the child process execution time to 5 seconds.
+    // Limit the child process execution time (fallback for cURLs own limits).
     const timerId = setTimeout(() => {
       curl.kill()
       collectedData = 'timeout'
       resolve(collectedData)
-    }, 20000)
+    }, 130000)
   })
 }
 

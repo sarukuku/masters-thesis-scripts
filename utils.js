@@ -65,7 +65,7 @@ const getHttpStatusCode = async domain => {
     // Limit the child process execution time (fallback for cURLs own limits).
     const timerId = setTimeout(() => {
       curl.kill()
-      collectedData = 'timeout'
+      collectedData = '000' // Return the same code cURL would return for timeout
       resolve(collectedData)
     }, 130000)
   })

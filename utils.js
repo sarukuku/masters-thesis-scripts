@@ -28,7 +28,7 @@ exports.gatherHttpStatusData = async filePath => {
 
   // Map over all domains, limit to 30 calls at once.
   await new Promise(resolve => {
-    async.mapLimit(domains, 200, async (domainObj) => {
+    async.mapLimit(domains, 400, async (domainObj) => {
       let httpStatusCode = await getHttpStatusCode(`${domainObj['Name']}.fi`)
       await db.saveHttpStatusCode(httpStatusCode, domainObj['rowid'])
       console.log(`Domain: ${domainObj['Name']}.fi Status: ${httpStatusCode}`)

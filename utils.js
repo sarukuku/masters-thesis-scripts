@@ -1,5 +1,6 @@
 'use strict'
 
+const { URL } = require('url')
 const async = require('async')
 const { spawn } = require('child_process')
 const db = require('./db.js')
@@ -125,17 +126,17 @@ exports.gatherDependencyData = async () => {
   db.close()
 }
 
-exports.analyzeHttpStatusData = async () => {
+exports.countUniqueKeysAnalysis = async (fieldName) => {
   // Fire it up.
   await db.openOrCreate()
 
   // Get all rows from the DB.
-  const queryResults = await db.getAll('HttpStatusCode')
+  const queryResults = await db.getAll(fieldName)
 
   // Loop over all rows and count HTTP status codes
   let statusCodes = {}
   queryResults.forEach(domainObj => {
-    let statusCode = domainObj['HttpStatusCode']
+    let statusCode = domainObj[fieldName]
 
     if (statusCodes.hasOwnProperty(statusCode)) {
       statusCodes[statusCode] += 1
@@ -143,10 +144,10 @@ exports.analyzeHttpStatusData = async () => {
       if (statusCode) {
         statusCodes[statusCode] = 1
       } else {
-        if (statusCodes.hasOwnProperty('emptyStatus')) {
-          statusCodes['emptyStatus'] += 1
+        if (statusCodes.hasOwnProperty('emptyType')) {
+          statusCodes['emptyType'] += 1
         } else {
-          statusCodes['emptyStatus'] = 1
+          statusCodes['emptyType'] = 1
         }
       }
     }
@@ -157,12 +158,165 @@ exports.analyzeHttpStatusData = async () => {
 
   // Log how many domains the set has in total (for error checking)
   let totalCount = 0
-  console.log('Counts (code,count):')
+  console.log('Counts (key,count):')
   for (let key in statusCodes) {
     console.log(`${key},${statusCodes[key]}`)
     totalCount += statusCodes[key]
   }
   console.log(`Domains in the result set: ${totalCount}`)
+
+  // Shut it down.
+  db.close()
+}
+
+exports.doDependencyOriginAnalysis = async () => {
+  // Fire it up.
+  await db.openOrCreate()
+
+  // Initi vars that hold cumulative counts
+  let failedCount = 0
+  let successCount = 0
+  let cuTotalRequests = 0
+  let cuTotalSameOriginRequests = 0
+  let cuTotalCrossOriginRequests = 0
+  let cuCrossOriginPercentage = 0
+  let cuResources = {}
+  let hostnameCounts = {}
+  let invalidURLs = []
+
+  // Loop over all records and cumulate counts
+  await db.forEachRecord(data => {
+    console.log(failedCount + successCount)
+
+    if (!data.DependencyJson.startsWith('{')) {
+      failedCount += 1
+      return
+    }
+
+    let domainObj = JSON.parse(data.DependencyJson)
+
+    successCount += 1
+    cuTotalRequests += domainObj.totalRequests
+    cuTotalSameOriginRequests += domainObj.totalSameOriginRequests
+    cuTotalCrossOriginRequests += domainObj.totalCrossOriginRequests
+    cuCrossOriginPercentage += domainObj.crossOriginPercentage
+
+    for (let key in domainObj.resources) {
+      if (!cuResources.hasOwnProperty(key)) {
+        cuResources[key] = {}
+        cuResources[key].avgTotalCount = 0
+        cuResources[key].avgSameOriginCount = 0
+        cuResources[key].avgCrossOriginCount = 0
+        cuResources[key].cumulativeDomainCount = 0
+      }
+
+      cuResources[key].avgTotalCount += domainObj.resources[key].totalCount
+      cuResources[key].avgSameOriginCount += domainObj.resources[key].sameOriginCount
+      cuResources[key].avgCrossOriginCount += domainObj.resources[key].crossOriginCount
+      cuResources[key].cumulativeDomainCount += 1
+
+      domainObj.resources[key].requests.forEach(req => {
+        try {
+          const url = new URL(req.url)
+          if (!hostnameCounts.hasOwnProperty(url.hostname)) {
+            hostnameCounts[url.hostname] = 0
+          }
+
+          hostnameCounts[url.hostname] += 1
+        } catch (error) {
+          invalidURLs.push(req.url)
+        }
+      })
+    }
+  }, 'HttpStatusCode=200')
+
+  // Post process cumulative counts
+  const avgRequests = (cuTotalRequests / successCount)
+  const avgSameOriginRequests = (cuTotalSameOriginRequests / successCount)
+  const avgCrossOriginRequests = (cuTotalCrossOriginRequests / successCount)
+  const avgCrossOriginPercentage = (cuCrossOriginPercentage / successCount)
+
+  for (let key in cuResources) {
+    cuResources[key].avgTotalCount = cuResources[key].avgTotalCount / successCount
+    cuResources[key].avgSameOriginCount = cuResources[key].avgSameOriginCount / successCount
+    cuResources[key].avgCrossOriginCount = cuResources[key].avgCrossOriginCount / successCount
+  }
+
+  let hostnamesArr = Object.entries(hostnameCounts)
+  hostnamesArr.sort((x, y) => y[1] - x[1])
+  hostnamesArr = hostnamesArr.slice(0, 30)
+
+  // Log results
+  console.log(
+    `failedCount: ${failedCount}`,
+    `successCount: ${successCount}`,
+    `avgRequests: ${avgRequests}`,
+    `avgSameOriginRequests: ${avgSameOriginRequests}`,
+    `avgCrossOriginRequests: ${avgCrossOriginRequests}`,
+    `avgCrossOriginPercentage: ${avgCrossOriginPercentage}`,
+    `invalidURLs: ${invalidURLs.length}`
+  )
+
+  console.log('cuResources:', cuResources)
+
+  console.log('hostnamesArr:', hostnamesArr)
+
+  // Shut it down.
+  db.close()
+}
+
+exports.doPopularUrlsAnalysis = async () => {
+  // Fire it up.
+  await db.openOrCreate()
+
+  let totalCount = 0
+  let urlCounts = []
+
+  // Loop over all records and cumulate counts
+  await db.forEachRecord(data => {
+    totalCount += 1
+    console.log(totalCount)
+
+    if (!data.DependencyJson.startsWith('{')) {
+      return
+    }
+
+    let domainObj = JSON.parse(data.DependencyJson)
+
+    for (let key in domainObj.resources) {
+      domainObj.resources[key].requests.forEach(req => {
+        try {
+          const url = new URL(req.url)
+
+          // Add url to array if it's not there yet otherwise grow count
+          // Check if we can find it
+          let foundIndex = null
+          for (let i = 0; i < urlCounts.length; i++) {
+            const o = urlCounts[i]
+            if (o.url === url) {
+              foundIndex = i
+              break
+            }
+          }
+
+          // Check was anything found and act based on that
+          if (foundIndex) {
+            urlCounts[foundIndex].count += 1
+          } else {
+            urlCounts.push({url: url, count: 1})
+          }
+        } catch (error) {
+          console.error('Invalid URL')
+        }
+      })
+    }
+  }, 'HttpStatusCode=200')
+
+  urlCounts.sort((x, y) => y.count - x.count)
+  urlCounts = urlCounts.slice(0, 30)
+
+  // Log results
+  console.log('urlCounts:', urlCounts)
 
   // Shut it down.
   db.close()

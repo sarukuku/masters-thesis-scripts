@@ -22,10 +22,25 @@ const argv = require('yargs').argv;
       await utils.gatherDependencyData()
       break
     case 'http-status-analysis':
-      await utils.analyzeHttpStatusData()
+      await utils.countUniqueKeysAnalysis('HttpStatusCode')
+      break
+    case 'association-type-analysis':
+      await utils.countUniqueKeysAnalysis('AssociationType')
+      break
+    case 'country-analysis':
+      await utils.countUniqueKeysAnalysis('Country')
+      break
+    case 'registrar-analysis':
+      await utils.countUniqueKeysAnalysis('Registrar')
+      break
+    case 'dep-origin-analysis':
+      await utils.doDependencyOriginAnalysis()
+      break
+    case 'popular-urls-analysis':
+      await utils.doPopularUrlsAnalysis()
       break
     default:
-      console.warn('You didn\'t select a task to run. I\'ll quit.')
+      console.warn('You didn\'t select a know task to run. I\'ll quit.')
       return
   }
 

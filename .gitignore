@@ -1,4 +1,4 @@
 node_modules
 domains-run-*
 *.sqlite3
-
+yarn-error.log

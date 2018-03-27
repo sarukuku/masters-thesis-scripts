@@ -140,15 +140,41 @@ exports.saveDependencyJson = async (json, rowId) => {
   })
 }
 
-exports.getAll = async (fieldsString) => {
+exports.getAll = async (fieldsString, limitClause = null) => {
   return new Promise(resolve => {
-    db.all(`SELECT ${fieldsString} FROM domains`, (err, domains) => {
+    const query = (limitClause) ? `SELECT ${fieldsString} FROM domains WHERE ${limitClause}` : `SELECT ${fieldsString} FROM domains`
+    db.all(query, (err, domains) => {
       if (err) {
         console.error(err.message)
       }
 
       resolve(domains)
     })
+  })
+}
+
+exports.getSingleRecord = async (rowId) => {
+  return new Promise(resolve => {
+    db.get(`SELECT * FROM domains WHERE rowid=${rowId}`, (err, row) => {
+      if (err) {
+        console.error(err.message)
+      }
+
+      resolve(row)
+    })
+  })
+}
+
+exports.forEachRecord = async (callbackFunc, limitClause = null) => {
+  return new Promise(async resolve => {
+    const rows = await exports.getAll('rowid', limitClause)
+
+    for (const row of rows) {
+      let data = await exports.getSingleRecord(row.rowid)
+      callbackFunc(data)
+    }
+
+    resolve()
   })
 }
 

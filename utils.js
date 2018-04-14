@@ -413,7 +413,7 @@ exports.findZeroSameOriginRequestsDomains = async () => {
   db.close()
 }
 
-exports.doDomainConnectionAnalysis = async (keyword) => {
+exports.doDomainConnectionAnalysis = async (keywordArr) => {
   // Fire it up.
   await db.openOrCreate()
 
@@ -438,9 +438,14 @@ exports.doDomainConnectionAnalysis = async (keyword) => {
         if (req.crossOrigin) {
           try {
             let url = new URL(req.url)
-            if (url.origin.includes(keyword)) {
-              foundCount += 1
-              break resourceLoop
+            // For each keyword
+            keywordLoop:
+            for (let x = 0; x < keywordArr.length; x++) {
+              const keyword = keywordArr[x]
+              if (url.origin.includes(keyword)) {
+                foundCount += 1
+                break resourceLoop
+              }
             }
           } catch (error) {
             console.error('Invalid url encountered')
@@ -452,7 +457,7 @@ exports.doDomainConnectionAnalysis = async (keyword) => {
 
   // Print results
   console.log(`Total domain count is ${totalCount}`)
-  console.log(`Keyword "${keyword}" found in ${foundCount} domains`)
+  console.log(`Keyword "${keywordArr.join(' or ')}" found in ${foundCount} domains`)
 
   // Shut it down.
   db.close()

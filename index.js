@@ -49,10 +49,10 @@ const argv = require('yargs').argv;
       await utils.findZeroSameOriginRequestsDomains()
       break
     case 'facebook-popularity-analysis':
-      await utils.doDomainConnectionAnalysis('facebook')
+      await utils.doDomainConnectionAnalysis(['facebook', 'fbcdn', 'fbsbx'])
       break
     case 'google-popularity-analysis':
-      await utils.doDomainConnectionAnalysis('google')
+      await utils.doDomainConnectionAnalysis(['google', 'youtube', 'adsense', 'adwords'])
       break
     default:
       console.warn('You didn\'t select a know task to run. I\'ll quit.')

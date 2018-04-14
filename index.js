@@ -49,7 +49,7 @@ const argv = require('yargs').argv;
       await utils.findZeroSameOriginRequestsDomains()
       break
     case 'facebook-popularity-analysis':
-      await utils.doDomainConnectionAnalysis(['facebook', 'fbcdn', 'fbsbx'])
+      await utils.doDomainConnectionAnalysis(['facebook', 'fbcdn', 'fbsbx', 'instagram'])
       break
     case 'google-popularity-analysis':
       await utils.doDomainConnectionAnalysis(['google', 'youtube', 'adsense', 'adwords'])

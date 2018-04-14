@@ -39,6 +39,21 @@ const argv = require('yargs').argv;
     case 'popular-urls-analysis':
       await utils.doPopularUrlsAnalysis()
       break
+    case 'popular-js-urls-analysis':
+      await utils.doPopularUrlsAnalysis('js')
+      break
+    case 'popular-css-urls-analysis':
+      await utils.doPopularUrlsAnalysis('css')
+      break
+    case 'zero-same-origin-requests':
+      await utils.findZeroSameOriginRequestsDomains()
+      break
+    case 'facebook-popularity-analysis':
+      await utils.doDomainConnectionAnalysis('facebook')
+      break
+    case 'google-popularity-analysis':
+      await utils.doDomainConnectionAnalysis('google')
+      break
     default:
       console.warn('You didn\'t select a know task to run. I\'ll quit.')
       return

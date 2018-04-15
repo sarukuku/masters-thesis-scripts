@@ -63,6 +63,9 @@ const argv = require('yargs').argv;
     case 'google-popularity-analysis':
       await utils.doDomainConnectionAnalysis(['google', 'youtube', 'adsense', 'adwords'])
       break
+    case 'wp-popularity-analysis':
+      await utils.doURLConnectionAnalysis(['/wp-content/'])
+      break
     default:
       console.warn('You didn\'t select a know task to run. I\'ll quit.')
       return

@@ -462,3 +462,45 @@ exports.doDomainConnectionAnalysis = async (keywordArr) => {
   // Shut it down.
   db.close()
 }
+
+exports.doURLConnectionAnalysis = async (keywordArr) => {
+  // Fire it up.
+  await db.openOrCreate()
+
+  let totalCount = 0
+  let foundCount = 0
+
+  // Loop over all records and cumulate counts
+  await db.forEachRecord(data => {
+    totalCount += 1
+    console.log(totalCount)
+
+    let domainObj = JSON.parse(data.DependencyJson)
+
+    // For each resource
+    resourceLoop:
+    for (let key in domainObj.resources) {
+      // For each request
+      requestLoop:
+      for (let i = 0; i < domainObj.resources[key].requests.length; i++) {
+        const req = domainObj.resources[key].requests[i]
+        // For each keyword
+        keywordLoop:
+        for (let x = 0; x < keywordArr.length; x++) {
+          const keyword = keywordArr[x]
+          if (req.url.includes(keyword)) {
+            foundCount += 1
+            break resourceLoop
+          }
+        }
+      }
+    }
+  }, `HttpStatusCode=200 AND DependencyJson like "{%" AND DependencyJson NOT LIKE '%"totalSameOriginRequests":0,%'`)
+
+  // Print results
+  console.log(`Total domain count is ${totalCount}`)
+  console.log(`Keyword "${keywordArr.join(' or ')}" found in ${foundCount} domains`)
+
+  // Shut it down.
+  db.close()
+}

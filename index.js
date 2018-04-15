@@ -45,6 +45,15 @@ const argv = require('yargs').argv;
     case 'popular-css-urls-analysis':
       await utils.doPopularUrlsAnalysis('css')
       break
+    case 'popular-gif-urls-analysis':
+      await utils.doPopularUrlsAnalysis('gif')
+      break
+    case 'popular-jpg-urls-analysis':
+      await utils.doPopularUrlsAnalysis('jpg')
+      break
+    case 'popular-png-urls-analysis':
+      await utils.doPopularUrlsAnalysis('png')
+      break
     case 'zero-same-origin-requests':
       await utils.findZeroSameOriginRequestsDomains()
       break

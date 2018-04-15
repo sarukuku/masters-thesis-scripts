@@ -66,6 +66,12 @@ const argv = require('yargs').argv;
     case 'wp-popularity-analysis':
       await utils.doURLConnectionAnalysis(['/wp-content/'])
       break
+    case 'drupal-popularity-analysis':
+      await utils.doURLConnectionAnalysis(['/sites/all/themes/', '/sites/all/', '/sites/default/files/', '/sites/default/', '/sites/'])
+      break
+    case 'joomla-popularity-analysis':
+      await utils.doURLConnectionAnalysis(['/media/system/', '/templates/'])
+      break
     default:
       console.warn('You didn\'t select a know task to run. I\'ll quit.')
       return
